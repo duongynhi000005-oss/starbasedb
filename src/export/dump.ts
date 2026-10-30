@@ -8,9 +8,9 @@ export async function dumpDatabaseRoute(
     config: StarbaseDBConfiguration
 ): Promise<Response> {
     try {
-        // Get all table names
+        // Get all user table names (excluding internal sqlite_* tables)
         const tablesResult = await executeOperation(
-            [{ sql: "SELECT name FROM sqlite_master WHERE type='table';" }],
+            [{ sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';" }],
             dataSource,
             config
         )
@@ -36,9 +36,10 @@ export async function dumpDatabaseRoute(
                 dumpContent += `\n-- Table: ${table}\n${schema};\n\n`
             }
 
-            // Get table data
+            const escapedTable = `"${String(table).replace(/"/g, '""')}"`
+            // Get table data using escaped table identifier
             const dataResult = await executeOperation(
-                [{ sql: `SELECT * FROM ${table};` }],
+                [{ sql: `SELECT * FROM ${escapedTable};` }],
                 dataSource,
                 config
             )
